@@ -8,7 +8,10 @@ import {
   KeyboardAvoidingView,
   FlatList,
   Text,
-  ActivityIndicator
+  ActivityIndicator,
+  NetInfo,
+  ToastAndroid,
+  AsyncStorage
 } from 'react-native';
 import { Card, ListItem } from 'react-native-elements';
 import Icon from 'react-native-ionicons';
@@ -26,8 +29,39 @@ class HomeComponent extends Component {
       page: 1,
       listOfQuestions: [],
       loadingMore: false,
-      firstLoading: false
+      firstLoading: false,
+      isConnected: false
     };
+  }
+
+  componentDidMount() {
+    NetInfo.isConnected.addEventListener('connectionChange', this.handleConnectivityChange);
+    NetInfo.isConnected.fetch().done(isConnected => {
+      this.setState({ isConnected });
+    });
+    // if (!this.state.isConnected) {
+    //   AsyncStorage.getItem('listOfQuestions')
+    //     .then(req => console.log(req))
+    //     .then(json => {
+    //       ToastAndroid.showWithGravityAndOffset(
+    //         json,
+    //         ToastAndroid.LONG,
+    //         ToastAndroid.BOTTOM,
+    //         25,
+    //         50
+    //       );
+    //       if (json !== []) this.setState({ listOfQuestions: json });
+    //     })
+    //     .catch(error =>
+    //       ToastAndroid.showWithGravityAndOffset(
+    //         error,
+    //         ToastAndroid.LONG,
+    //         ToastAndroid.BOTTOM,
+    //         25,
+    //         50
+    //       )
+    //     );
+    // }
   }
 
   componentWillReceiveProps(nextprops) {
@@ -48,9 +82,51 @@ class HomeComponent extends Component {
     }
   }
 
+  componentWillUnmount() {
+    ToastAndroid.showWithGravityAndOffset(
+      'Unmount',
+      ToastAndroid.LONG,
+      ToastAndroid.BOTTOM,
+      25,
+      50
+    );
+    NetInfo.isConnected.removeEventListener('change', this.handleConnectivityChange);
+    //  if (this.state.listOfQuestions !== []) {
+    // AsyncStorage.setItem('listOfQuestions', this.state.listOfQuestions)
+    //   .then(json =>
+    //     ToastAndroid.showWithGravityAndOffset(json, ToastAndroid.LONG, ToastAndroid.BOTTOM, 25, 50)
+    //   )
+    //   .catch(error =>
+    //     ToastAndroid.showWithGravityAndOffset(error, ToastAndroid.LONG, ToastAndroid.BOTTOM, 25, 50)
+    //   );
+  }
+
+  handleConnectivityChange = isConnected => {
+    ToastAndroid.showWithGravityAndOffset(
+      `${isConnected}`,
+      ToastAndroid.LONG,
+      ToastAndroid.BOTTOM,
+      25,
+      50
+    );
+    this.setState({
+      isConnected
+    });
+  };
+
   handleSearchButton() {
-    this.setState({ listOfQuestions: [] });
-    this.searchListOfQuestion();
+    if (this.state.isConnected) {
+      this.setState({ listOfQuestions: [] });
+      this.searchListOfQuestion();
+    } else {
+      ToastAndroid.showWithGravityAndOffset(
+        'No Internet Connection',
+        ToastAndroid.LONG,
+        ToastAndroid.BOTTOM,
+        25,
+        50
+      );
+    }
   }
 
   searchListOfQuestion() {
@@ -81,20 +157,34 @@ class HomeComponent extends Component {
   }
 
   render() {
+    console.log('connection', this.state.isConnected);
     const handleLoadMore = () => {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
       this.setState({ page: this.state.page + 1 }, () => {
         if (!this.props.isLoading) {
-          console.log('calling');
+          ToastAndroid.showWithGravityAndOffset(
+            'calling',
+            ToastAndroid.LONG,
+            ToastAndroid.BOTTOM,
+            25,
+            50
+          );
           this.searchListOfQuestion();
         }
       });
     };
 
     const renderFooter = () => {
+      if (!this.state.isConnected) {
+        if (this.state.loadingMore) this.setState({ loadingMore: false });
+      }
       if (!this.state.loadingMore) {
-        return <View />;
+        return (
+          <View style={{ marginBottom: 10 }}>
+            <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
+          </View>
+        );
       }
       return (
         <View style={{ paddingVertical: 5, borderWidth: 1, borderColor: '#CED0CE' }}>
@@ -103,7 +193,8 @@ class HomeComponent extends Component {
       );
     };
     const RenderData = data => {
-      if (data.length === 0) {
+      console.log('data', data);
+      if (data !== null && data.length === 0) {
         if (this.state.firstLoading) {
           return (
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -119,6 +210,7 @@ class HomeComponent extends Component {
 
       return (
         <FlatList
+          extraData={this.state}
           data={data}
           renderItem={renderUserCard}
           keyExtractor={item => item.question_id.toString()}
@@ -129,32 +221,35 @@ class HomeComponent extends Component {
       );
     };
 
-    const renderUserCard = ({ item, index }) => (
-      //  console.log(item.owner.profile_image);
-      <TouchableOpacity
-        style={{ marginBottom: 3 }}
-        onPress={() => Actions.answerComponent({ item })}
-      >
-        <Card key={item.question_id} containerStyle={styles.cardWithIcon}>
-          <ListItem
-            leftAvatar={{
-              source: { uri: item.owner.profile_image }
+    const renderUserCard = ({ item, index }) => {
+      const connection = this.state.isConnected;
+      return (
+        //  console.log(item.owner.profile_image);
+        <TouchableOpacity
+          style={{ marginBottom: 3 }}
+          onPress={() => Actions.answerComponent({ item, connection })}
+        >
+          <Card key={item.question_id} containerStyle={styles.cardWithIcon}>
+            <ListItem
+              leftAvatar={{
+                source: { uri: item.owner.profile_image }
 
-              // icon: { uri: item.owner.profile_image }
+                // icon: { uri: item.owner.profile_image }
 
-              // title: item.owner.display_name
-            }}
-            title={item.owner.display_name}
-          />
-          <View style={styles.cardElementStyle}>
-            <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{item.title}</Text>
-            <View style={{ justifyContent: 'space-between', flexDirection: 'row' }}>
-              <Text style={{ fontSize: 14 }}>{item.score} Votes</Text>
+                // title: item.owner.display_name
+              }}
+              title={item.owner.display_name}
+            />
+            <View style={styles.cardElementStyle}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{item.title}</Text>
+              <View style={{ justifyContent: 'space-between', flexDirection: 'row' }}>
+                <Text style={{ fontSize: 14 }}>{item.score} Votes</Text>
+              </View>
             </View>
-          </View>
-        </Card>
-      </TouchableOpacity>
-    );
+          </Card>
+        </TouchableOpacity>
+      );
+    };
     // inside your render function
     return (
       <View style={{ marginBottom: 100 }}>
@@ -178,7 +273,7 @@ class HomeComponent extends Component {
           </View>
         </KeyboardAvoidingView>
         {RenderData(this.state.listOfQuestions)}
-        {/* {this.noResultFound()} */}
+        {this.noResultFound()}
       </View>
     );
   }

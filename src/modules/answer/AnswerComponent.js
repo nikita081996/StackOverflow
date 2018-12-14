@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Actions } from 'react-native-router-flux';
 import {
   View,
   StyleSheet,
@@ -7,7 +8,8 @@ import {
   Text,
   Dimensions,
   ActivityIndicator,
-  Image
+  Image,
+  ToastAndroid
 } from 'react-native';
 import { Card, ListItem } from 'react-native-elements';
 import { connect } from 'react-redux';
@@ -29,7 +31,17 @@ class AnswerComponent extends Component {
   }
 
   componentWillMount() {
-    this.fetchListOfAnswer();
+    console.log(this.props);
+    if (this.props.connection) this.fetchListOfAnswer();
+    else {
+      ToastAndroid.showWithGravityAndOffset(
+        this.props.connection,
+        ToastAndroid.LONG,
+        ToastAndroid.BOTTOM,
+        25,
+        50
+      );
+    }
   }
 
   componentWillReceiveProps(nextprops) {
@@ -59,24 +71,6 @@ class AnswerComponent extends Component {
     this.props.fetchListOfAnswers(this.props.item.question_id, this.state.page);
   }
 
-  noResultFound() {
-    if (this.props.errMess !== null) {
-      if (this.state.firstLoading) {
-        this.setState({ firstLoading: false });
-        this.setState({ listOfQuestions: [] });
-      }
-      if (this.state.loadingMore) {
-        this.setState({ loadingMore: false });
-      }
-      return (
-        <View>
-          <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
-        </View>
-      );
-    }
-    return <View />;
-  }
-
   replaceNewLinewithHtmlTag(body) {
     const a = body.replace(new RegExp('\n\n', 'g'), '\n');
 
@@ -95,13 +89,19 @@ class AnswerComponent extends Component {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
       this.setState({ page: this.state.page + 1 }, () => {
-        console.log('calling');
+        ToastAndroid.showWithGravityAndOffset(
+          'Calling',
+          ToastAndroid.LONG,
+          ToastAndroid.BOTTOM,
+          25,
+          50
+        );
         this.fetchListOfAnswer();
       });
     };
 
     const renderFooter = () => {
-      if (this.props.errMess !== null) {
+      if (this.props.errMess !== null || !this.props.connection) {
         if (this.state.firstLoading) {
           this.setState({ firstLoading: false });
           // this.setState({ listOfQuestions: [] });
@@ -139,7 +139,6 @@ class AnswerComponent extends Component {
             code: (x, k) => <Text style={{ color: 'black', fontWeight: 'bold' }}>{k}</Text>
           }}
         />
-        {this.noResultFound()}
       </View>
     );
     const RenderData = data => {
