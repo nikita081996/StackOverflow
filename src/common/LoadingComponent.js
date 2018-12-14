@@ -15,6 +15,7 @@ const styles = StyleSheet.create({
   loadingView: {
     marginTop: 200
   },
+
   loadingText: {
     color: '#512DA8',
     fontSize: 14,

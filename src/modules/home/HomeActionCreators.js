@@ -3,7 +3,11 @@ import * as ActionTypes from '../../constants/Constants';
 //comments fetching
 export const fetchListOfQuestions = (pageNo, q) => dispatch => {
   dispatch(questionsLoading());
-  return fetch(`${ActionTypes.SEARCH_ADVANCED_API}&page=${pageNo}&q=${q}`)
+  return fetch(
+    `${
+      ActionTypes.STACK_EXCHANGE_API
+    }search/advanced?pagesize=10&order=desc&sort=relevance&filter=withbody&site=stackoverflow&run=true&page=${pageNo}&q=${q}`
+  )
     .then(
       response => {
         if (response.ok) {
@@ -38,5 +42,10 @@ export const addQuestions = questions => ({
 // loading data while fetching comment data
 export const questionsLoading = () => ({
   type: ActionTypes.QUESTIONS_LOADING,
+  payload: null
+});
+
+export const defaultState = () => ({
+  type: ActionTypes.DEFAULT_STATE,
   payload: null
 });
