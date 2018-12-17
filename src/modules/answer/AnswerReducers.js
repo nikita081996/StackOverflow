@@ -10,7 +10,6 @@ const INITIAL_STATE = {
 export default (state = INITIAL_STATE, action) => {
   switch (action.type) {
     case ActionTypes.ANSWERS_ADD:
-      //console.log(action.payload);
       return { ...state, isLoading: false, errMess: null, answers: action.payload };
 
     case ActionTypes.ANSWERS_LOADING:

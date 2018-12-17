@@ -39,29 +39,38 @@ class HomeComponent extends Component {
     NetInfo.isConnected.fetch().done(isConnected => {
       this.setState({ isConnected });
     });
-    // if (!this.state.isConnected) {
-    //   AsyncStorage.getItem('listOfQuestions')
-    //     .then(req => console.log(req))
-    //     .then(json => {
-    //       ToastAndroid.showWithGravityAndOffset(
-    //         json,
-    //         ToastAndroid.LONG,
-    //         ToastAndroid.BOTTOM,
-    //         25,
-    //         50
-    //       );
-    //       if (json !== []) this.setState({ listOfQuestions: json });
-    //     })
-    //     .catch(error =>
-    //       ToastAndroid.showWithGravityAndOffset(
-    //         error,
-    //         ToastAndroid.LONG,
-    //         ToastAndroid.BOTTOM,
-    //         25,
-    //         50
-    //       )
-    //     );
-    // }
+    ToastAndroid.showWithGravityAndOffset(
+      'did mount',
+      ToastAndroid.LONG,
+      ToastAndroid.BOTTOM,
+      25,
+      50
+    );
+
+    setTimeout(() => {
+      if (this.state.isConnected) {
+        console.log('connection', this.state.isConnected);
+
+        AsyncStorage.getItem('listOfQuestions')
+          .then(res => {
+            const parseData = JSON.parse(res);
+            //console.log('req', da[0].question_id);
+
+            if (res !== null) {
+              this.setState({ listOfQuestions: parseData });
+            }
+          })
+          .catch(error =>
+            ToastAndroid.showWithGravityAndOffset(
+              error,
+              ToastAndroid.LONG,
+              ToastAndroid.BOTTOM,
+              25,
+              50
+            )
+          );
+      }
+    }, 1000);
   }
 
   componentWillReceiveProps(nextprops) {
@@ -91,24 +100,30 @@ class HomeComponent extends Component {
       50
     );
     NetInfo.isConnected.removeEventListener('change', this.handleConnectivityChange);
-    //  if (this.state.listOfQuestions !== []) {
-    // AsyncStorage.setItem('listOfQuestions', this.state.listOfQuestions)
-    //   .then(json =>
-    //     ToastAndroid.showWithGravityAndOffset(json, ToastAndroid.LONG, ToastAndroid.BOTTOM, 25, 50)
-    //   )
-    //   .catch(error =>
-    //     ToastAndroid.showWithGravityAndOffset(error, ToastAndroid.LONG, ToastAndroid.BOTTOM, 25, 50)
-    //   );
+    if (this.state.listOfQuestions !== []) {
+      AsyncStorage.setItem('listOfQuestions', JSON.stringify(this.state.listOfQuestions))
+        .then(json =>
+          ToastAndroid.showWithGravityAndOffset(
+            'settt',
+            ToastAndroid.LONG,
+            ToastAndroid.BOTTOM,
+            25,
+            50
+          )
+        )
+        .catch(error =>
+          ToastAndroid.showWithGravityAndOffset(
+            `error${error}`,
+            ToastAndroid.LONG,
+            ToastAndroid.BOTTOM,
+            25,
+            50
+          )
+        );
+    }
   }
 
   handleConnectivityChange = isConnected => {
-    ToastAndroid.showWithGravityAndOffset(
-      `${isConnected}`,
-      ToastAndroid.LONG,
-      ToastAndroid.BOTTOM,
-      25,
-      50
-    );
     this.setState({
       isConnected
     });
@@ -157,7 +172,6 @@ class HomeComponent extends Component {
   }
 
   render() {
-    console.log('connection', this.state.isConnected);
     const handleLoadMore = () => {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
@@ -203,8 +217,6 @@ class HomeComponent extends Component {
           );
         }
       }
-
-      //  console.log('state', this.state.listOfQuestions);
 
       if (this.state.firstLoading) this.setState({ firstLoading: false });
 
@@ -282,7 +294,6 @@ class HomeComponent extends Component {
 // mapping state data to props
 const mapStateToProps = state => {
   const { isLoading, errMess, questions } = state.question;
-  // console.log(state.question.questions);
   return { isLoading, errMess, questions };
 };
 
@@ -294,7 +305,6 @@ export default connect(
 
 const styles = StyleSheet.create({
   mainContainer: {
-    // Setting up View inside content in Vertically center.
     width: '87%',
     padding: 4
   },

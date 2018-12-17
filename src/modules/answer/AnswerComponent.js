@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { Actions } from 'react-native-router-flux';
 import {
   View,
   StyleSheet,
@@ -8,8 +7,8 @@ import {
   Text,
   Dimensions,
   ActivityIndicator,
-  Image,
-  ToastAndroid
+  ToastAndroid,
+  Image
 } from 'react-native';
 import { Card, ListItem } from 'react-native-elements';
 import { connect } from 'react-redux';
@@ -31,24 +30,19 @@ class AnswerComponent extends Component {
   }
 
   componentWillMount() {
-    console.log(this.props);
-    if (this.props.connection) this.fetchListOfAnswer();
-    else {
-      ToastAndroid.showWithGravityAndOffset(
-        this.props.connection,
-        ToastAndroid.LONG,
-        ToastAndroid.BOTTOM,
-        25,
-        50
-      );
-    }
+    ToastAndroid.showWithGravityAndOffset(
+      `${this.props.item.question_id}`,
+      ToastAndroid.LONG,
+      ToastAndroid.BOTTOM,
+      25,
+      50
+    );
+    this.fetchListOfAnswer();
   }
 
   componentWillReceiveProps(nextprops) {
     if (nextprops.answers.items !== undefined) {
       if (!nextprops.isLoading) {
-        // console.log('component', nextprops.answers.items);
-
         if (this.state.listOfAnswers === []) {
           this.setState({
             listOfAnswers: this.state.listOfAnswers.concat(nextprops.answers.items)
@@ -71,6 +65,24 @@ class AnswerComponent extends Component {
     this.props.fetchListOfAnswers(this.props.item.question_id, this.state.page);
   }
 
+  noResultFound() {
+    if (this.props.errMess !== null) {
+      if (this.state.firstLoading) {
+        this.setState({ firstLoading: false });
+        this.setState({ listOfQuestions: [] });
+      }
+      if (this.state.loadingMore) {
+        this.setState({ loadingMore: false });
+      }
+      return (
+        <View>
+          <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
+        </View>
+      );
+    }
+    return <View />;
+  }
+
   replaceNewLinewithHtmlTag(body) {
     const a = body.replace(new RegExp('\n\n', 'g'), '\n');
 
@@ -83,25 +95,18 @@ class AnswerComponent extends Component {
     const { title, body, score } = this.props.item;
     const { display_name } = this.props.item.owner;
     const modifiedBody = this.replaceNewLinewithHtmlTag(body);
-    //  console.log(this.state.listOfAnswers);
 
     const handleLoadMore = () => {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
       this.setState({ page: this.state.page + 1 }, () => {
-        ToastAndroid.showWithGravityAndOffset(
-          'Calling',
-          ToastAndroid.LONG,
-          ToastAndroid.BOTTOM,
-          25,
-          50
-        );
+        console.log('calling');
         this.fetchListOfAnswer();
       });
     };
 
     const renderFooter = () => {
-      if (this.props.errMess !== null || !this.props.connection) {
+      if (this.props.errMess !== null) {
         if (this.state.firstLoading) {
           this.setState({ firstLoading: false });
           // this.setState({ listOfQuestions: [] });
@@ -139,6 +144,7 @@ class AnswerComponent extends Component {
             code: (x, k) => <Text style={{ color: 'black', fontWeight: 'bold' }}>{k}</Text>
           }}
         />
+        {this.noResultFound()}
       </View>
     );
     const RenderData = data => {
@@ -217,7 +223,6 @@ class AnswerComponent extends Component {
 // mapping state data to props
 const mapStateToProps = state => {
   const { isLoading, errMess, answers } = state.answer;
-  // console.log(state.answer.answers.items);
   return { isLoading, errMess, answers };
 };
 
@@ -228,6 +233,20 @@ export default connect(
 )(AnswerComponent);
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    width: '87%',
+    padding: 4
+  },
+
+  textInputStyleClass: {
+    textAlign: 'center',
+    color: '#ffffff',
+    height: 45,
+    borderWidth: 2,
+    borderColor: 'grey',
+    borderRadius: 10,
+    backgroundColor: 'grey'
+  },
   cardWithIcon: {
     flex: 1,
     backgroundColor: '#ffffff',

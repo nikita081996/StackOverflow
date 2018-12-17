@@ -1,6 +1,6 @@
 import * as ActionTypes from '../../constants/Constants';
 
-//comments fetching
+//Question fetching
 export const fetchListOfQuestions = (pageNo, q) => dispatch => {
   dispatch(questionsLoading());
   return fetch(
@@ -27,19 +27,19 @@ export const fetchListOfQuestions = (pageNo, q) => dispatch => {
     .catch(error => dispatch(questionsFetchingFailed(error)));
 };
 
-//comment fetching failed
+//Question fetching failed
 export const questionsFetchingFailed = errorMessage => ({
   type: ActionTypes.QUESTIONS_LOADING_FAILED,
   payload: errorMessage
 });
 
-// If comment fetching success
+// If Question fetching success
 export const addQuestions = questions => ({
   type: ActionTypes.QUESTIONS_ADD,
   payload: questions
 });
 
-// loading data while fetching comment data
+// loading data while fetching Question data
 export const questionsLoading = () => ({
   type: ActionTypes.QUESTIONS_LOADING,
   payload: null
