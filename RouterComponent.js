@@ -19,12 +19,12 @@ const RouterComponent = () => (
 
 const styles = StyleSheet.create({
   navBar: {
-    backgroundColor: '#512DA8',
-    justifyContent: 'flex-start' // changing navbar color
+    backgroundColor: '#512DA8', // changing navbar color
+    justifyContent: 'flex-start'
   },
   navTitle: {
-    color: 'white',
-    justifyContent: 'flex-start' // changing navbar title color
+    color: 'white', // changing navbar title color
+    justifyContent: 'flex-start'
   }
 });
 

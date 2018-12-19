@@ -6,18 +6,16 @@ const INITIAL_STATE = {
   answers: []
 };
 
-// comment reducers
+// Answers reducers
 export default (state = INITIAL_STATE, action) => {
   switch (action.type) {
     case ActionTypes.ANSWERS_ADD:
       return { ...state, isLoading: false, errMess: null, answers: action.payload };
 
     case ActionTypes.ANSWERS_LOADING:
-      //  console.log(action.payload);
       return { ...state, isLoading: true, errMess: null, answers: [] };
 
     case ActionTypes.ANSWERS_LOADING_FAILED:
-      // console.log(action.payload);
       return { ...state, isLoading: false, errMess: action.payload };
 
     default:

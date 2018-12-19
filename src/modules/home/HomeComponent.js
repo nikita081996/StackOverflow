@@ -34,28 +34,18 @@ class HomeComponent extends Component {
     };
   }
 
+  // check whether the internet connection is available or not, if not then fetch the data from async storage
   componentDidMount() {
     NetInfo.isConnected.addEventListener('connectionChange', this.handleConnectivityChange);
     NetInfo.isConnected.fetch().done(isConnected => {
       this.setState({ isConnected });
     });
-    ToastAndroid.showWithGravityAndOffset(
-      'did mount',
-      ToastAndroid.LONG,
-      ToastAndroid.BOTTOM,
-      25,
-      50
-    );
 
     setTimeout(() => {
-      if (this.state.isConnected) {
-        console.log('connection', this.state.isConnected);
-
+      if (!this.state.isConnected) {
         AsyncStorage.getItem('listOfQuestions')
           .then(res => {
             const parseData = JSON.parse(res);
-            //console.log('req', da[0].question_id);
-
             if (res !== null) {
               this.setState({ listOfQuestions: parseData });
             }
@@ -73,6 +63,7 @@ class HomeComponent extends Component {
     }, 1000);
   }
 
+  // store the data to the state
   componentWillReceiveProps(nextprops) {
     if (nextprops.questions.items !== undefined) {
       if (!nextprops.isLoading) {
@@ -91,27 +82,12 @@ class HomeComponent extends Component {
     }
   }
 
+  // remove the NetInfo connection listener
   componentWillUnmount() {
-    ToastAndroid.showWithGravityAndOffset(
-      'Unmount',
-      ToastAndroid.LONG,
-      ToastAndroid.BOTTOM,
-      25,
-      50
-    );
     NetInfo.isConnected.removeEventListener('change', this.handleConnectivityChange);
     if (this.state.listOfQuestions !== []) {
-      AsyncStorage.setItem('listOfQuestions', JSON.stringify(this.state.listOfQuestions))
-        .then(json =>
-          ToastAndroid.showWithGravityAndOffset(
-            'settt',
-            ToastAndroid.LONG,
-            ToastAndroid.BOTTOM,
-            25,
-            50
-          )
-        )
-        .catch(error =>
+      AsyncStorage.setItem('listOfQuestions', JSON.stringify(this.state.listOfQuestions)).catch(
+        error =>
           ToastAndroid.showWithGravityAndOffset(
             `error${error}`,
             ToastAndroid.LONG,
@@ -119,19 +95,25 @@ class HomeComponent extends Component {
             25,
             50
           )
-        );
+      );
     }
   }
 
+  /**
+   * handle whenever netwoek connection changes
+   */
   handleConnectivityChange = isConnected => {
     this.setState({
       isConnected
     });
   };
 
+  // when user click the search button reset the state and fetch the data if and only if connection is available
   handleSearchButton() {
     if (this.state.isConnected) {
       this.setState({ listOfQuestions: [] });
+      this.setState({ page: 1 });
+
       this.searchListOfQuestion();
     } else {
       ToastAndroid.showWithGravityAndOffset(
@@ -144,7 +126,9 @@ class HomeComponent extends Component {
     }
   }
 
+  // call the action creators function to fetch the list of questions from api
   searchListOfQuestion() {
+    // if page  is 1 then change the firstLoading state to true
     if (this.state.page === 1 && this.state.firstLoading === false) {
       this.setState({ firstLoading: true });
     }
@@ -153,50 +137,32 @@ class HomeComponent extends Component {
     this.props.fetchListOfQuestions(this.state.page, this.state.searchText);
   }
 
-  noResultFound() {
-    if (this.props.errMess !== null) {
-      if (this.state.firstLoading) {
-        this.setState({ firstLoading: false });
-        this.setState({ listOfQuestions: [] });
-      }
-      if (this.state.loadingMore) {
-        this.setState({ loadingMore: false });
-      }
-      return (
-        <View>
-          <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
-        </View>
-      );
-    }
-    return <View />;
-  }
-
   render() {
+    // fetch the data again when list reach at the end of the screen
     const handleLoadMore = () => {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
       this.setState({ page: this.state.page + 1 }, () => {
-        if (!this.props.isLoading) {
-          ToastAndroid.showWithGravityAndOffset(
-            'calling',
-            ToastAndroid.LONG,
-            ToastAndroid.BOTTOM,
-            25,
-            50
-          );
+        if (this.props.questions.has_more) {
           this.searchListOfQuestion();
         }
       });
     };
 
+    // footer of the flatlist
     const renderFooter = () => {
       if (!this.state.isConnected) {
         if (this.state.loadingMore) this.setState({ loadingMore: false });
       }
-      if (!this.state.loadingMore) {
+      if (
+        this.props.errMess !== null ||
+        this.props.questions.has_more !== undefined ||
+        this.props.questions.has_more === false ||
+        !this.state.loadingMore
+      ) {
         return (
           <View style={{ marginBottom: 10 }}>
-            <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
+            <Text style={{ alignSelf: 'center' }}>No More Result Found</Text>
           </View>
         );
       }
@@ -206,8 +172,10 @@ class HomeComponent extends Component {
         </View>
       );
     };
+
+    // list of data in flatlist
     const RenderData = data => {
-      console.log('data', data);
+      // if there is  no data then show the loading indicator
       if (data !== null && data.length === 0) {
         if (this.state.firstLoading) {
           return (
@@ -217,7 +185,7 @@ class HomeComponent extends Component {
           );
         }
       }
-
+      // if data is available then set the firstLoading state to false
       if (this.state.firstLoading) this.setState({ firstLoading: false });
 
       return (
@@ -233,10 +201,10 @@ class HomeComponent extends Component {
       );
     };
 
+    // card data for each data in list
     const renderUserCard = ({ item, index }) => {
       const connection = this.state.isConnected;
       return (
-        //  console.log(item.owner.profile_image);
         <TouchableOpacity
           style={{ marginBottom: 3 }}
           onPress={() => Actions.answerComponent({ item, connection })}
@@ -245,10 +213,6 @@ class HomeComponent extends Component {
             <ListItem
               leftAvatar={{
                 source: { uri: item.owner.profile_image }
-
-                // icon: { uri: item.owner.profile_image }
-
-                // title: item.owner.display_name
               }}
               title={item.owner.display_name}
             />
@@ -285,7 +249,6 @@ class HomeComponent extends Component {
           </View>
         </KeyboardAvoidingView>
         {RenderData(this.state.listOfQuestions)}
-        {this.noResultFound()}
       </View>
     );
   }

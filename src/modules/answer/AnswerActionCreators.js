@@ -4,9 +4,9 @@ import * as ActionTypes from '../../constants/Constants';
 export const fetchListOfAnswers = (question_id, pageNo) => dispatch => {
   dispatch(answersLoading());
   return fetch(
-    `${
-      ActionTypes.STACK_EXCHANGE_API
-    }questions/${question_id}/answers?order=desc&page=${pageNo}&pagesize=2&sort=activity&site=stackoverflow&filter=withbody`
+    `${ActionTypes.STACK_EXCHANGE_API}questions/${question_id}/answers?key=${
+      ActionTypes.STACK_EXCHANGE_API_KEY
+    }&order=desc&page=${pageNo}&pagesize=2&sort=votes&site=stackoverflow&filter=withbody`
   )
     .then(
       response => {

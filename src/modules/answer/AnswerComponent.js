@@ -7,8 +7,8 @@ import {
   Text,
   Dimensions,
   ActivityIndicator,
-  ToastAndroid,
-  Image
+  Image,
+  ScrollView
 } from 'react-native';
 import { Card, ListItem } from 'react-native-elements';
 import { connect } from 'react-redux';
@@ -29,17 +29,12 @@ class AnswerComponent extends Component {
     };
   }
 
+  // fetch list of answer when component mount
   componentWillMount() {
-    ToastAndroid.showWithGravityAndOffset(
-      `${this.props.item.question_id}`,
-      ToastAndroid.LONG,
-      ToastAndroid.BOTTOM,
-      25,
-      50
-    );
     this.fetchListOfAnswer();
   }
 
+  // store the data to the state
   componentWillReceiveProps(nextprops) {
     if (nextprops.answers.items !== undefined) {
       if (!nextprops.isLoading) {
@@ -58,6 +53,7 @@ class AnswerComponent extends Component {
     }
   }
 
+  // call the action creators function to fetch the list of answers from api
   fetchListOfAnswer() {
     if (this.state.page === 1 && this.state.firstLoading === false) {
       this.setState({ firstLoading: true });
@@ -65,48 +61,36 @@ class AnswerComponent extends Component {
     this.props.fetchListOfAnswers(this.props.item.question_id, this.state.page);
   }
 
-  noResultFound() {
-    if (this.props.errMess !== null) {
-      if (this.state.firstLoading) {
-        this.setState({ firstLoading: false });
-        this.setState({ listOfQuestions: [] });
-      }
-      if (this.state.loadingMore) {
-        this.setState({ loadingMore: false });
-      }
-      return (
-        <View>
-          <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
-        </View>
-      );
-    }
-    return <View />;
-  }
-
+  // replace '\n' with <br/> tag
   replaceNewLinewithHtmlTag(body) {
     const a = body.replace(new RegExp('\n\n', 'g'), '\n');
-
     const b = a.replace(new RegExp('<ul>\n', 'g'), '<ul>');
     const c = b.replace(new RegExp('</li>\n', 'g'), '</li>');
     const d = c.replace(new RegExp('\n', 'g'), '<br>');
     return d;
   }
+
   render() {
     const { title, body, score } = this.props.item;
     const { display_name } = this.props.item.owner;
     const modifiedBody = this.replaceNewLinewithHtmlTag(body);
 
+    // fetch the data again when list reach at the end of the screen
     const handleLoadMore = () => {
       if (!this.state.loadingMore) this.setState({ loadingMore: true });
 
       this.setState({ page: this.state.page + 1 }, () => {
-        console.log('calling');
-        this.fetchListOfAnswer();
+        if (this.props.answers.has_more) this.fetchListOfAnswer();
       });
     };
 
+    // footer of the flatlist
     const renderFooter = () => {
-      if (this.props.errMess !== null) {
+      if (
+        this.props.errMess !== null ||
+        this.props.answers.has_more !== undefined ||
+        this.props.answers.has_more === false
+      ) {
         if (this.state.firstLoading) {
           this.setState({ firstLoading: false });
           // this.setState({ listOfQuestions: [] });
@@ -116,7 +100,7 @@ class AnswerComponent extends Component {
         }
         return (
           <View>
-            <Text style={{ alignSelf: 'center' }}>No Result Found</Text>
+            <Text style={{ alignSelf: 'center' }}>No More Result Found</Text>
           </View>
         );
       }
@@ -127,6 +111,7 @@ class AnswerComponent extends Component {
       );
     };
 
+    // header of the flatlist
     const renderHeader = () => (
       <View>
         <View>
@@ -144,12 +129,35 @@ class AnswerComponent extends Component {
             code: (x, k) => <Text style={{ color: 'black', fontWeight: 'bold' }}>{k}</Text>
           }}
         />
-        {this.noResultFound()}
       </View>
     );
+
+    // list of data in flatlist
     const RenderData = data => {
+      // if there is  no data then show the loading indicator
       if (data.length === 0) {
-        if (this.state.firstLoading) {
+        if (!this.props.answers.has_more) {
+          return (
+            <ScrollView>
+              <View>
+                <View style={{ justifyContent: 'flex-end', alignSelf: 'flex-end' }}>
+                  <Text>
+                    {display_name}, {score} Votes
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{title}</Text>
+              </View>
+              <HTML
+                html={modifiedBody}
+                imagesMaxWidth={Dimensions.get('window').width}
+                renderers={{
+                  code: (x, k) => <Text style={{ color: 'black', fontWeight: 'bold' }}>{k}</Text>
+                }}
+              />
+              {/* {this.noResultFound()} */}
+            </ScrollView>
+          );
+        } else if (this.state.firstLoading) {
           return (
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
               <Loading />
@@ -158,8 +166,7 @@ class AnswerComponent extends Component {
         }
       }
 
-      console.log('state', this.state.listOfAnswers);
-
+      // if data is available then set the firstLoading state to false
       if (this.state.firstLoading) this.setState({ firstLoading: false });
 
       return (
@@ -175,9 +182,9 @@ class AnswerComponent extends Component {
       );
     };
 
+    // card data for each data in list
     const renderUserCard = ({ item, index }) => {
       const modifiedAnswerBody = this.replaceNewLinewithHtmlTag(item.body);
-      console.log(item.answer_id);
       return (
         <TouchableOpacity style={{ marginBottom: 3 }}>
           <Card key={item.answer_id} containerStyle={styles.cardWithIcon}>
@@ -192,7 +199,11 @@ class AnswerComponent extends Component {
                 html={modifiedAnswerBody}
                 imagesMaxWidth={Dimensions.get('window').width}
                 renderers={{
-                  code: (x, k) => <Text style={{ color: 'black', fontWeight: 'bold' }}>{k}</Text>,
+                  code: (x, k) => (
+                    <Text style={{ color: 'black', fontWeight: 'bold', fontStyle: 'italic' }}>
+                      {k}
+                    </Text>
+                  ),
                   img: (x, k) => (
                     <Image
                       style={{ width: 50, height: 50 }}
