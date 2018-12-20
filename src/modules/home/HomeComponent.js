@@ -111,6 +111,8 @@ class HomeComponent extends Component {
   // when user click the search button reset the state and fetch the data if and only if connection is available
   handleSearchButton() {
     if (this.state.isConnected) {
+      if (this.state.loadingMore) this.setState({ loadingMore: false });
+
       this.setState({ listOfQuestions: [] });
       this.setState({ page: 1 });
 
